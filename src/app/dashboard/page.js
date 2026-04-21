@@ -5,26 +5,29 @@ import Navigation from '@/components/Navigation';
 import AddItemsModal from '@/components/AddItemsModal';
 import CompleteModal from '@/components/CompleteModal';
 import Link from 'next/link';
-import { formatPKR, formatTime, formatDate, getStatusInfo, getPaymentInfo, getEquipmentIcon, getTodayDate, sortBookingsByTime } from '@/lib/utils';
+import { formatPKR, formatTime, formatDate, getStatusInfo, getPaymentInfo, getEquipmentIcon, getTodayDate, getBusinessDate, sortBookingsByTime } from '@/lib/utils';
 import { generateBookingWhatsAppUrl, generateReminderWhatsAppUrl } from '@/lib/whatsapp';
 
 export default function DashboardPage() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [todayDate] = useState(getTodayDate());
+  const [todayDate, setTodayDate] = useState('');
   const [addItemsBooking, setAddItemsBooking] = useState(null);
   const [completeBooking, setCompleteBooking] = useState(null);
   const [cancelConfirm, setCancelConfirm] = useState(null);
 
   useEffect(() => {
-    fetchTodayBookings();
-    const interval = setInterval(fetchTodayBookings, 60000);
+    const bd = getBusinessDate();
+    setTodayDate(bd);
+    fetchTodayBookings(bd);
+    const interval = setInterval(() => fetchTodayBookings(bd), 60000);
     return () => clearInterval(interval);
   }, []);
 
-  async function fetchTodayBookings() {
+  async function fetchTodayBookings(dateOverride) {
+    const bd = dateOverride || todayDate || getBusinessDate();
     try {
-      const res = await fetch(`/api/bookings?date=${getTodayDate()}`);
+      const res = await fetch(`/api/bookings?date=${bd}`);
       const data = await res.json();
       if (Array.isArray(data)) setBookings(sortBookingsByTime(data));
     } catch (err) { console.error(err); }
@@ -33,8 +36,6 @@ export default function DashboardPage() {
 
   const activeBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'in_progress');
   const completedBookings = bookings.filter(b => b.status === 'completed');
-  const totalRevenue = bookings.filter(b => b.status !== 'cancelled').reduce((s, b) => s + b.total_amount, 0);
-  const advanceCollected = bookings.filter(b => b.status !== 'cancelled').reduce((s, b) => s + b.advance_amount, 0);
 
   const [reminders, setReminders] = useState([]);
 
@@ -91,7 +92,7 @@ export default function DashboardPage() {
       <main className="main-content">
         <div className="page-header">
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">{formatDate(todayDate)} • {activeBookings.length} active bookings</p>
+          <p className="page-subtitle">{todayDate ? formatDate(todayDate) : '...'} • {activeBookings.length} active</p>
         </div>
 
         {/* Reminder Banner */}
@@ -114,7 +115,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Stats Grid */}
+        {/* Quick Stats */}
         <div className="stats-grid">
           <div className="stat-card purple">
             <div className="stat-icon">🎮</div>
@@ -126,16 +127,11 @@ export default function DashboardPage() {
             <div className="stat-value">{completedBookings.length}</div>
             <div className="stat-label">Done</div>
           </div>
-          <div className="stat-card blue">
+          <Link href="/finance" className="stat-card blue" style={{ textDecoration: 'none' }}>
             <div className="stat-icon">💰</div>
-            <div className="stat-value" style={{ fontSize: 18 }}>{formatPKR(totalRevenue)}</div>
-            <div className="stat-label">Revenue</div>
-          </div>
-          <div className="stat-card amber">
-            <div className="stat-icon">💵</div>
-            <div className="stat-value" style={{ fontSize: 18 }}>{formatPKR(advanceCollected)}</div>
-            <div className="stat-label">Collected</div>
-          </div>
+            <div className="stat-value" style={{ fontSize: 14 }}>View</div>
+            <div className="stat-label">Finance</div>
+          </Link>
         </div>
 
         {/* Active Bookings */}

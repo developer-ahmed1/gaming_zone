@@ -42,6 +42,39 @@ export function getTodayDate() {
 }
 
 /**
+ * Get the current "business date" — accounts for midnight crossing.
+ * If it's between 12:00 AM and the closing hour (default 2 AM),
+ * the business date is still yesterday.
+ * @param {number} closingHour - The hour the zone closes (default 2, meaning 2 AM)
+ */
+export function getBusinessDate(closingHour = 2) {
+  const now = new Date();
+  const h = now.getHours();
+  // If current hour is between midnight and closing, we're still in yesterday's business day
+  if (h < closingHour) {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return toISODate(yesterday);
+  }
+  return toISODate(now);
+}
+
+/**
+ * Get the two calendar dates that make up a business day.
+ * Business day "2026-04-22" = April 22 (from opening) + April 23 (until closing).
+ * Returns { primaryDate, nextDate } so queries can fetch both.
+ */
+export function getBusinessDayDates(businessDate) {
+  const d = new Date(businessDate + 'T00:00:00');
+  const next = new Date(d);
+  next.setDate(next.getDate() + 1);
+  return {
+    primaryDate: toISODate(d),
+    nextDate: toISODate(next),
+  };
+}
+
+/**
  * Format time for display (24h -> 12h)
  */
 export function formatTime(timeStr) {

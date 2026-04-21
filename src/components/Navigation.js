@@ -7,6 +7,7 @@ const navItems = [
   { href: '/dashboard', icon: '📊', label: 'Dashboard' },
   { href: '/booking', icon: '➕', label: 'Book' },
   { href: '/bookings', icon: '📋', label: 'Bookings' },
+  { href: '/finance', icon: '💰', label: 'Finance' },
   { href: '/settings', icon: '⚙️', label: 'Settings' },
 ];
 
